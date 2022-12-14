@@ -30,6 +30,14 @@ process_like_relay_fedinet_social () {
     eval "$1='${relayName};${numberOfInstances}'"
 }
 
+process_like_relay_intahnet_co_uk () {
+    relayURL=$2
+    contentFile=$3
+
+    relayName=$(echo $2 | cut -d '/' -f3)
+    numberOfInstances=$(curl -sL "$relayURL/api/subs/list" | jq .'instances | length')
+    eval "$1='${relayName};${numberOfInstances}'"
+}
 
 process_unkown () {
     relayURL=$2
@@ -41,7 +49,7 @@ process_unkown () {
     eval "$1='${relayName};${numberOfInstances}'"
 }
 
-echo "" > relays_metadata.csv
+rm relays_metadata.csv
 
 while read eachRelayURL           
 do           
@@ -62,10 +70,17 @@ do
         process_like_relay_fedinet_social data $eachRelayURL content.tmp
     fi
 
+    if grep -q 'YUKIMOCHI' content.tmp; then
+        process_like_relay_intahnet_co_uk data $eachRelayURL content.tmp
+    fi
+
     if [[ "$data" == "" ]]; then
         process_unkown data $eachRelayURL content.tmp
     fi
 
-    echo $data >> relays_metadata.csv
     rm content.tmp
+    echo $data >> relays_metadata.csv
 done < relays.txt
+
+echo "###### RESULT ######"
+cat relays_metadata.csv
