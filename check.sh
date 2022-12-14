@@ -10,6 +10,16 @@ process_like_relay_fedi_tools () {
     eval "$1='${relayName};${numberOfInstances}'"
 }
 
+process_like_relay_beckmeyer_us () {
+    relayURL=$2
+    contentFile=$3
+
+    relayName=$(echo $2 | cut -d '/' -f3)
+    numberOfInstances=$(grep -Eo '[0-9]* Connected Servers' $contentFile | grep -e '[0-9]*' -o -m 1 | head -1)
+
+    eval "$1='${relayName};${numberOfInstances}'"
+}
+
 process_like_relay_fedinet_social () {
     relayURL=$2
     contentFile=$3
@@ -41,6 +51,10 @@ do
     
     if [[ "$eachRelayURL" == "https://relay.fedi.tools" ]]; then
         process_like_relay_fedi_tools data $eachRelayURL content.tmp
+    fi
+
+    if grep -q 'Akkoma' content.tmp; then
+        process_like_relay_beckmeyer_us data $eachRelayURL content.tmp
     fi
 
     implMarker=$(xmllint --html --xpath 'string(//p)' content.tmp 2>/dev/null)
