@@ -1,5 +1,15 @@
 #!/bin/bash
 
+process_like_relay_fedi_tools () {
+    relayURL=$2
+    contentFile=$3
+
+    relayName=$(echo $2 | cut -d '/' -f3)
+    numberOfInstances=$(xmllint --html --xpath "count(/html/body/div[1]/div[8]/div//li)" $contentFile 2>/dev/null)
+
+    eval "$1='${relayName};${numberOfInstances}'"
+}
+
 process_like_relay_fedinet_social () {
     relayURL=$2
     contentFile=$3
@@ -10,15 +20,38 @@ process_like_relay_fedinet_social () {
     eval "$1='${relayName};${numberOfInstances}'"
 }
 
+
+process_unkown () {
+    relayURL=$2
+    contentFile=$3
+
+    relayName=$(echo $2 | cut -d '/' -f3)
+    numberOfInstances="<unknown>"
+
+    eval "$1='${relayName};${numberOfInstances}'"
+}
+
+echo "" > relays_metadata.csv
+
 while read eachRelayURL           
 do           
     echo "checking $eachRelayURL ..." 
     data=''
     curl -sL "$eachRelayURL" -o content.tmp
+    
+    if [[ "$eachRelayURL" == "https://relay.fedi.tools" ]]; then
+        process_like_relay_fedi_tools data $eachRelayURL content.tmp
+    fi
+
     implMarker=$(xmllint --html --xpath 'string(//p)' content.tmp 2>/dev/null)
     if [[ "$implMarker" == "This is an Activity Relay for fediverse instances." ]]; then
         process_like_relay_fedinet_social data $eachRelayURL content.tmp
     fi
-    echo $data
+
+    if [[ "$data" == "" ]]; then
+        process_unkown data $eachRelayURL content.tmp
+    fi
+
+    echo $data >> relays_metadata.csv
     rm content.tmp
 done < relays.txt
